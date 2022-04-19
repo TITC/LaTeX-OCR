@@ -8,14 +8,12 @@ import argparse
 import logging
 import yaml
 import re
-
 import numpy as np
 import torch
 from munch import Munch
 from transformers import PreTrainedTokenizerFast
 from timm.models.resnetv2 import ResNetV2
 from timm.models.layers import StdConv2dSame
-
 from pix2tex.dataset.latex2png import tex2pil
 from pix2tex.models import get_model
 from pix2tex.utils import *
@@ -82,11 +80,6 @@ def call_model(args, model, image_resizer, tokenizer, img=None):
             img = last_pic.copy()
     else:
         last_pic = img.copy()
-    # transfer RGBA to RGB, img.convert('RGB') can't meet the requirement
-    if img.mode == 'RGBA':
-        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-        rgb_img.paste(img, mask=img.split()[3])
-        img = rgb_img
     img = minmax_size(pad(img), args.max_dimensions, args.min_dimensions)
     if image_resizer is not None and not args.no_resize:
         with torch.no_grad():

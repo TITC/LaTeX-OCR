@@ -2,7 +2,6 @@ from pix2tex.dataset.dataset import Im2LatexDataset
 import argparse
 import logging
 import yaml
-
 import numpy as np
 import torch
 from torchtext.data import metrics
@@ -10,7 +9,6 @@ from munch import Munch
 from tqdm.auto import tqdm
 import wandb
 from Levenshtein import distance
-
 from pix2tex.models import get_model, Model
 from pix2tex.utils import *
 
