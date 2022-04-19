@@ -88,6 +88,15 @@ def read_tex_files(file_path, demacro=True):
 
 
 def download_paper(arxiv_id, dir_path='./'):
+    """given an arxiv id, generate a tar.gz file of the paper in dir_path
+
+    Args:
+        arxiv_id (str): arxiv id, e.g. "2012.00009"
+        dir_path (str, optional): save path. Defaults to './'.
+
+    Returns:
+        (str): path to the tar.gz file if successful, 0 otherwise
+    """
     url = arxiv_base + arxiv_id
     return download(url, dir_path)
 
@@ -101,7 +110,16 @@ def read_paper(targz_path, delete=True, demacro=True):
     return paper
 
 
-def parse_arxiv(id, demacro=True):
+def parse_arxiv(id: str, demacro: bool = True):
+    """extract all math expressions from an arxiv paper
+
+    Args:
+        id (str): arxiv id, e.g. "2012.00009"
+        demacro (bool, optional): whether to de-macro the paper. Defaults to True.
+
+    Returns:
+        _type_: _description_
+    """
     tempdir = tempfile.gettempdir()
     text = read_paper(download_paper(id, tempdir), demacro=demacro)
     #print(text, file=open('paper.tex', 'w'))
@@ -110,7 +128,7 @@ def parse_arxiv(id, demacro=True):
     return find_math(text, wiki=False), []
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Extract math from arxiv')
     parser.add_argument('-m', '--mode', default='top100', choices=['top100', 'ids', 'dir'],
                         help='Where to extract code from. top100: current 100 arxiv papers, id: specific arxiv ids. \
@@ -163,3 +181,16 @@ if __name__ == '__main__':
             f.write(element)
             f.write('\n')
         f.close()
+
+
+if __name__ == '__main__':
+    # main()
+    # test download
+    # result = download_paper(arxiv_id="ssss.00009",
+    #                         dir_path='/mnt/d/git_repository/LaTeX-OCR/pix2tex/dataset/data/arxiv')
+    # print(result)
+
+    # test parse_arxiv
+    latexs = parse_arxiv(id="2204.07158", demacro=True)
+    for formula in latexs[0]:
+        print(formula)
