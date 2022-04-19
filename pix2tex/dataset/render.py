@@ -1,4 +1,4 @@
-from pix2tex.dataset.latex2png import *
+from pix2tex.dataset.latex2png import Latex, tex2pil
 import argparse
 import sys
 import os
@@ -7,6 +7,7 @@ import shutil
 from tqdm.auto import tqdm
 import cv2
 import numpy as np
+from PIL import Image
 
 
 def render_dataset(dataset: np.ndarray, names: np.ndarray, args):
@@ -54,8 +55,8 @@ def render_dataset(dataset: np.ndarray, names: np.ndarray, args):
                 else:
                     pngs = Latex(math, dpi=dpi, font=font).write(return_bytes=False)
             except Exception as e:
-                #print(e)
-                #print(math)
+                # print(e)
+                # print(math)
                 #raise e
                 faulty.extend(list(names[order[i:i+args.batchsize]]))
                 continue
@@ -66,15 +67,20 @@ def render_dataset(dataset: np.ndarray, names: np.ndarray, args):
                     try:
                         data = np.asarray(pngs[j])
                         # print(data.shape)
-                        gray = 255*(data[..., 0] < 128).astype(np.uint8)  # To invert the text to white
-                        coords = cv2.findNonZero(gray)  # Find all non-zero points (text)
-                        a, b, w, h = cv2.boundingRect(coords)  # Find minimum spanning bounding box
+                        # To invert the text to white
+                        gray = 255*(data[..., 0] < 128).astype(np.uint8)
+                        # Find all non-zero points (text)
+                        coords = cv2.findNonZero(gray)
+                        # Find minimum spanning bounding box
+                        a, b, w, h = cv2.boundingRect(coords)
                         rect = data[b:b+h, a:a+w]
-                        im = Image.fromarray((255-rect[..., -1]).astype(np.uint8)).convert('L')
+                        im = Image.fromarray(
+                            (255-rect[..., -1]).astype(np.uint8)).convert('L')
                         dims = []
                         for x in [w, h]:
                             div, mod = divmod(x, args.divable)
-                            dims.append(args.divable*(div + (1 if mod > 0 else 0)))
+                            dims.append(
+                                args.divable*(div + (1 if mod > 0 else 0)))
                         padded = Image.new('L', dims, 255)
                         padded.paste(im, im.getbbox())
                         padded.save(outpath)
@@ -90,16 +96,24 @@ def render_dataset(dataset: np.ndarray, names: np.ndarray, args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Render dataset')
-    parser.add_argument('-i', '--data', type=str, required=True, help='file of list of latex code')
-    parser.add_argument('-o', '--out', type=str, required=True, help='output directory')
-    parser.add_argument('-b', '--batchsize', type=int, default=100, help='How many equations to render at once')
+    parser.add_argument('-i', '--data', type=str,
+                        required=True, help='file of list of latex code')
+    parser.add_argument('-o', '--out', type=str,
+                        required=True, help='output directory')
+    parser.add_argument('-b', '--batchsize', type=int, default=100,
+                        help='How many equations to render at once')
     parser.add_argument('-f', '--font', nargs='+', type=str, default=['Latin Modern Math', 'GFSNeohellenicMath.otf', 'Asana Math', 'XITS Math',
                                                                       'Cambria Math', 'Latin Modern Math', 'Latin Modern Math', 'Latin Modern Math'], help='font to use. default = Latin Modern Math')
-    parser.add_argument('-m', '--mode', choices=['inline', 'equation'], default='equation', help='render as inline or equation')
-    parser.add_argument('--dpi', type=int, default=[110, 170], nargs='+', help='dpi range to render in')
-    parser.add_argument('-p', '--no-preprocess', dest='preprocess', default=True, action='store_false', help='crop, remove alpha channel, padding')
-    parser.add_argument('-d', '--divable', type=int, default=32, help='To what factor to pad the images')
-    parser.add_argument('-s', '--shuffle', action='store_true', help='Whether to shuffle the equations in the first iteration')
+    parser.add_argument('-m', '--mode', choices=[
+                        'inline', 'equation'], default='equation', help='render as inline or equation')
+    parser.add_argument(
+        '--dpi', type=int, default=[110, 170], nargs='+', help='dpi range to render in')
+    parser.add_argument('-p', '--no-preprocess', dest='preprocess', default=True,
+                        action='store_false', help='crop, remove alpha channel, padding')
+    parser.add_argument('-d', '--divable', type=int, default=32,
+                        help='To what factor to pad the images')
+    parser.add_argument('-s', '--shuffle', action='store_true',
+                        help='Whether to shuffle the equations in the first iteration')
     args = parser.parse_args(sys.argv[1:])
 
     dataset = np.array(open(args.data, 'r').read().split('\n'), dtype=object)
