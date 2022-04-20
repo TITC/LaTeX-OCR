@@ -11,7 +11,8 @@ import wandb
 
 from pix2tex.eval import evaluate
 from pix2tex.models import get_model
-from pix2tex.utils import *
+# from pix2tex.utils import *
+from pix2tex.utils import in_model_path, parse_args, seed_everything, get_optimizer, get_scheduler
 
 
 def train(args):
