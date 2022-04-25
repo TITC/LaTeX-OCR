@@ -39,7 +39,8 @@ class Latex:
                 # print(document)
                 f.write(document)
 
-            png = self.convert_file(texfile, workdir, return_bytes=return_bytes)
+            png = self.convert_file(
+                texfile, workdir, return_bytes=return_bytes)
             return png
 
         finally:
@@ -53,7 +54,8 @@ class Latex:
 
         try:
             # Generate the PDF file
-            cmd = 'xelatex -halt-on-error -output-directory %s %s' % (workdir, infile)
+            cmd = 'xelatex -halt-on-error -output-directory %s %s' % (
+                workdir, infile)
 
             p = subprocess.Popen(
                 cmd,
@@ -71,7 +73,7 @@ class Latex:
             pdffile = infile.replace('.tex', '.pdf')
             pngfile = os.path.join(workdir, infile.replace('.tex', '.png'))
 
-            cmd = 'magick convert -density %i -colorspace gray %s -quality 90 %s' % (
+            cmd = 'convert -density %i -colorspace gray %s -quality 90 %s' % (
                 self.dpi,
                 pdffile,
                 pngfile,
@@ -86,12 +88,15 @@ class Latex:
 
             sout, serr = p.communicate()
             if p.returncode != 0:
-                raise Exception('PDFpng error', serr, cmd, os.path.exists(pdffile), os.path.exists(infile))
+                raise Exception('PDFpng error', serr, cmd, os.path.exists(
+                    pdffile), os.path.exists(infile))
             if return_bytes:
                 if len(self.math) > 1:
-                    png = [open(pngfile.replace('.png', '')+'-%i.png' % i, 'rb').read() for i in range(len(self.math))]
+                    png = [open(pngfile.replace('.png', '')+'-%i.png' %
+                                i, 'rb').read() for i in range(len(self.math))]
                 else:
-                    png = [open(pngfile.replace('.png', '')+'.png', 'rb').read()]
+                    png = [open(pngfile.replace(
+                        '.png', '')+'.png', 'rb').read()]
                 return png
             else:
                 if len(self.math) > 1:
