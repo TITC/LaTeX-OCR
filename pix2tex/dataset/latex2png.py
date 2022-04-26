@@ -6,7 +6,9 @@ import sys
 import io
 import glob
 import tempfile
+import shlex
 import subprocess
+import traceback
 from PIL import Image
 
 
@@ -27,6 +29,8 @@ class Latex:
         self.math = math
         self.dpi = dpi
         self.font = font
+        self.prefix_line = self.BASE.split("\n").index(
+            "%s")  # used for calculate error formula index
 
     def write(self, return_bytes=False):
         # inline = bool(re.match('^\$[^$]*\$$', self.math)) and False
@@ -39,9 +43,9 @@ class Latex:
                 # print(document)
                 f.write(document)
 
-            png = self.convert_file(
+            png, error_index = self.convert_file(
                 texfile, workdir, return_bytes=return_bytes)
-            return png
+            return png, error_index
 
         finally:
             if os.path.exists(texfile):
@@ -54,21 +58,23 @@ class Latex:
 
         try:
             # Generate the PDF file
-            cmd = 'xelatex -halt-on-error -output-directory %s %s' % (
+            #  not stop on error line, but return error line index,index start from 1
+            cmd = 'xelatex -interaction nonstopmode -file-line-error -output-directory %s %s' % (
                 workdir, infile)
 
             p = subprocess.Popen(
-                cmd,
-                shell=True,
+                shlex.split(cmd),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                universal_newlines=True
             )
             sout, serr = p.communicate()
-            # Something bad happened, abort
-            if p.returncode != 0:
-                raise Exception('latex error', serr, sout)
-
+            # extract error line from sout
+            error_index, _ = extract(text=sout, expression="%s:(\d+)" % infile)
+            if error_index != []:
+                # offset index start from 0, same as self.math
+                error_index = [int(_)-self.prefix_line-1 for _ in error_index]
             # Convert the PDF file to PNG's
             pdffile = infile.replace('.tex', '.pdf')
             pngfile = os.path.join(workdir, infile.replace('.tex', '.png'))
@@ -79,8 +85,7 @@ class Latex:
                 pngfile,
             )  # -bg Transparent -z 9
             p = subprocess.Popen(
-                cmd,
-                shell=True,
+                shlex.split(cmd),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -97,12 +102,14 @@ class Latex:
                 else:
                     png = [open(pngfile.replace(
                         '.png', '')+'.png', 'rb').read()]
-                return png
             else:
+                #return path
                 if len(self.math) > 1:
-                    return [(pngfile.replace('.png', '')+'-%i.png' % i) for i in range(len(self.math))]
+                    png = [(pngfile.replace('.png', '')+'-%i.png' % i)
+                           for i in range(len(self.math))]
                 else:
-                    return (pngfile.replace('.png', '')+'.png')
+                    png = [(pngfile.replace('.png', '')+'.png')]
+            return png, error_index
         finally:
             # Cleanup temporaries
             basefile = infile.replace('.tex', '')
@@ -127,9 +134,32 @@ def tex2png(eq, **kwargs):
 
 
 def tex2pil(tex, **kwargs):
-    pngs = Latex(tex, **kwargs).write(return_bytes=True)
+    pngs, error_index = Latex(tex, **kwargs).write(return_bytes=True)
     images = [Image.open(io.BytesIO(d)) for d in pngs]
-    return images
+    return images, error_index
+
+
+def extract(text, expression=None, type: str = None):
+    """extract text from text by regular expression
+
+    Args:
+        text (str): input text
+        expression (str, optional): regular expression. Defaults to None.
+        type (str, optional): type of extracted text. Defaults to None.
+
+    Returns:
+        str: extracted text
+    """
+    if type is not None:
+        type2expression = {"en": r"[a-zA-Z]+", "zh": r"[\u4e00-\u9fa5]+", "num": r"\d+",
+                           "punctuation": u"[\u3002\uff1b\uff0c\uff1a\u201c\u201d\uff08\uff09\u3001\uff1f\u300a\u300b]"}
+        expression = type2expression[type]
+    try:
+        pattern = re.compile(expression)
+        results = re.findall(pattern, text)
+        return results, True if len(results) != 0 else False
+    except Exception:
+        traceback.print_exc()
 
 
 if __name__ == '__main__':
