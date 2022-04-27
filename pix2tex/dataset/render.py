@@ -82,7 +82,7 @@ def render_dataset(dataset: np.ndarray, unrenders: np.ndarray, args):
                     batch_offset+_ for _ in local_error_index]
                 faulty.extend(list(unrenders[order[global_error_index]]))
             except Exception as e:
-                traceback.print_exc()
+                print("\n%s" % e, end='')
                 faulty.extend(
                     list(unrenders[order[batch_offset:batch_offset+args.batchsize]]))
                 continue
@@ -100,6 +100,14 @@ def render_dataset(dataset: np.ndarray, unrenders: np.ndarray, args):
                         # print(data.shape)
                         # To invert the text to white
                         gray = 255*(data[..., 0] < 128).astype(np.uint8)
+                        white_pixels = np.sum(gray == 255)
+                        # some png will be whole white, because some equation's syntax is wrong
+                        # eg.$$ \mathit { \Iota \Kappa \Lambda \Mu \Nu \Xi \Omicron \Pi } $$
+                        # extract from wikipedia english dump file https://dumps.wikimedia.org/enwiki/latest/
+                        white_percentage = (
+                            white_pixels / (gray.shape[0] * gray.shape[1]))
+                        if white_percentage == 0:
+                            continue
                         # Find all non-zero points (text)
                         coords = cv2.findNonZero(gray)
                         # Find minimum spanning bounding box
@@ -116,8 +124,7 @@ def render_dataset(dataset: np.ndarray, unrenders: np.ndarray, args):
                         padded.paste(im, (0, 0, im.size[0], im.size[1]))
                         padded.save(outpath)
                     except Exception as e:
-                        print("preprocess ERROR", e)
-                        traceback.print_exc()
+                        print(e)
                         pass
                 else:
                     shutil.move(pngs[png_idx], outpath)
@@ -160,4 +167,6 @@ if __name__ == '__main__':
     while unrenders.tolist() != failed.tolist():
         failed = unrenders
         unrenders = render_dataset(dataset[unrenders], unrenders, args)
-        print("failed equations:", unrenders)
+        if len(unrenders) < 50*args.batchsize:
+            args.batchsize = max([1, args.batchsize//2])
+        args.shuffle = True

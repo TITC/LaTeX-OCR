@@ -72,11 +72,17 @@ class Latex:
             sout, serr = p.communicate()
             # extract error line from sout
             error_index, _ = extract(text=sout, expression="%s:(\d+)" % infile)
+            # extract success rendered equation
             if error_index != []:
                 # offset index start from 0, same as self.math
                 error_index = [int(_)-self.prefix_line-1 for _ in error_index]
             # Convert the PDF file to PNG's
             pdffile = infile.replace('.tex', '.pdf')
+            result, _ = extract(
+                text=sout, expression="Output written on %s \((.*)? pages\)" % pdffile)
+            if int(result[0]) != len(self.math):
+                raise Exception('xelatex rendering error, generated %d formula\'s page, but the total number of formulas is %d.' % (
+                    int(result[0]), len(self.math)))
             pngfile = os.path.join(workdir, infile.replace('.tex', '.png'))
 
             cmd = 'convert -density %i -colorspace gray %s -quality 90 %s' % (
@@ -103,7 +109,7 @@ class Latex:
                     png = [open(pngfile.replace(
                         '.png', '')+'.png', 'rb').read()]
             else:
-                #return path
+                # return path
                 if len(self.math) > 1:
                     png = [(pngfile.replace('.png', '')+'-%i.png' % i)
                            for i in range(len(self.math))]
