@@ -260,9 +260,8 @@ def generate_tokenizer(equations, output, vocab_size):
     from tokenizers.trainers import BpeTrainer
     tokenizer = Tokenizer(BPE())
     tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
-    trainer = BpeTrainer(special_tokens=[
-                         "[PAD]", "[BOS]", "[EOS]"], vocab_size=vocab_size, show_progress=True)
-    tokenizer.train(trainer, equations)
+    trainer = BpeTrainer(special_tokens=["[PAD]", "[BOS]", "[EOS]"], vocab_size=vocab_size, show_progress=True)
+    tokenizer.train(equations, trainer)
     tokenizer.save(path=output, pretty=False)
 
 
