@@ -1,6 +1,6 @@
 # pix2tex - LaTeX OCR
 
-[![GitHub](https://img.shields.io/github/license/lukas-blecher/LaTeX-OCR)](https://github.com/lukas-blecher/LaTeX-OCR) [![PyPI](https://img.shields.io/pypi/v/pix2tex?logo=pypi)](https://pypi.org/project/pix2tex) [![PyPI - Downloads](https://img.shields.io/pypi/dm/pix2tex?logo=pypi)](https://pypi.org/project/pix2tex) [![GitHub all releases](https://img.shields.io/github/downloads/lukas-blecher/LaTeX-OCR/total?color=blue&logo=github)](https://github.com/lukas-blecher/LaTeX-OCR/releases) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lukas-blecher/LaTeX-OCR/blob/main/notebooks/LaTeX_OCR_test.ipynb) 
+[![GitHub](https://img.shields.io/github/license/lukas-blecher/LaTeX-OCR)](https://github.com/lukas-blecher/LaTeX-OCR) [![Documentation Status](https://readthedocs.org/projects/pix2tex/badge/?version=latest)](https://pix2tex.readthedocs.io/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/v/pix2tex?logo=pypi)](https://pypi.org/project/pix2tex) [![PyPI - Downloads](https://img.shields.io/pypi/dm/pix2tex?logo=pypi)](https://pypi.org/project/pix2tex) [![GitHub all releases](https://img.shields.io/github/downloads/lukas-blecher/LaTeX-OCR/total?color=blue&logo=github)](https://github.com/lukas-blecher/LaTeX-OCR/releases) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lukas-blecher/LaTeX-OCR/blob/main/notebooks/LaTeX_OCR_test.ipynb) 
 
 The goal of this project is to create a learning based system that takes an image of a math formula and returns corresponding LaTeX code. 
 
@@ -8,6 +8,8 @@ The goal of this project is to create a learning based system that takes an imag
 
 ## Using the model
 To run the model you need Python 3.7+
+
+If you don't have PyTorch installed. Follow their instructions [here](https://pytorch.org/get-started/locally/).
 
 Install the package `pix2tex`: 
 
@@ -17,24 +19,47 @@ pip install pix2tex[gui]
 
 Model checkpoints will be downloaded automatically.
 
-There are two ways to get a prediction from an image. 
+There are three ways to get a prediction from an image. 
 1. You can use the command line tool by calling `pix2tex`. Here you can parse already existing images from the disk and images in your clipboard.
 
 2. Thanks to [@katie-lim](https://github.com/katie-lim), you can use a nice user interface as a quick way to get the model prediction. Just call the GUI with `latexocr`. From here you can take a screenshot and the predicted latex code is rendered using [MathJax](https://www.mathjax.org/) and copied to your clipboard.
 
     Under linux, it is possible to use the GUI with `gnome-screenshot` which comes with multiple monitor support. You just need to run `latexocr --gnome` (**Note:** you should install `gnome-screenshot` beforehand).
 
-![demo](https://user-images.githubusercontent.com/55287601/117812740-77b7b780-b262-11eb-81f6-fc19766ae2ae.gif)
+    ![demo](https://user-images.githubusercontent.com/55287601/117812740-77b7b780-b262-11eb-81f6-fc19766ae2ae.gif)
 
-If the model is unsure about the what's in the image it might output a different prediction every time you click "Retry". With the `temperature` parameter you can control this behavior (low temperature will produce the same result).
+    If the model is unsure about the what's in the image it might output a different prediction every time you click "Retry". With the `temperature` parameter you can control this behavior (low temperature will produce the same result).
 
+3. You can use an API. This has additional dependencies. Install via `pip install -U pix2tex[api]` and run
+    ```bash
+    python -m pix2tex.api.run
+    ```
+    to start a [Streamlit](https://streamlit.io/) demo that connects to the API at port 8502. There is also a docker image available for the API: https://hub.docker.com/r/lukasblecher/pix2tex
+
+    ```
+    docker pull lukasblecher/pix2tex:api
+    docker run -p 8502:8502 lukasblecher/pix2tex:api
+    ```
+    To also run the streamlit demo run
+    ```
+    docker run -it -p 8501:8501 --entrypoint python lukasblecher/pix2tex:api pix2tex/api/run.py
+    ```
+    and navigate to http://localhost:8501/
 
 The model works best with images of smaller resolution. That's why I added a preprocessing step where another neural network predicts the optimal resolution of the input image. This model will automatically resize the custom image to best resemble the training data and thus increase performance of images found in the wild. Still it's not perfect and might not be able to handle huge images optimally, so don't zoom in all the way before taking a picture. 
 
 Always double check the result carefully. You can try to redo the prediction with an other resolution if the answer was wrong.
 
+**Want to use the package?**
+
+I'm trying to compile a documentation right now. 
+
+Visit here: https://pix2tex.readthedocs.io/ 
+
+
 ## Training the model [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lukas-blecher/LaTeX-OCR/blob/main/notebooks/LaTeX_OCR_training.ipynb)
 
+Install a couple of dependencies `pip install pix2tex[train]`.
 1. First we need to combine the images with their ground truth labels. I wrote a dataset class (which needs further improving) that saves the relative paths to the images with the LaTeX code they were rendered with. To generate the dataset pickle file run 
 
 ```
