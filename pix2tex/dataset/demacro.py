@@ -82,7 +82,7 @@ def unfold(t):
     #t = queue.get()
     t = t.replace('\n', 'Ċ')
     t = bracket_replace(t)
-    commands_pattern = r'\\(?:re)?newcommand\*?{\\(.+?)}[\sĊ]*(\[\d\])?[\sĊ]*(\[.+?\])?[\sĊ]*{(.*?)}\s*(?:Ċ|\\)'
+    commands_pattern = r'\\(?:re)?newcommand\*?{\\(.+?)}[\sĊ]*(\[\d\])?[\sĊ]*(\[.+?\])?[\sĊ]*{(.*?)}'
     cmds = re.findall(commands_pattern, t)
     t = re.sub(r'(?<!\\)'+commands_pattern, 'Ċ', t)
     cmds = sorted(cmds, key=lambda x: len(x[0]))
@@ -120,7 +120,16 @@ def unfold(t):
     return t
 
 
-def pydemacro(t):
+def pydemacro(t: str) -> str:
+    r"""Replaces all occurences of newly defined Latex commands in a document.
+    Can replace `\newcommand`, `\def` and `\let` definitions in the code.
+
+    Args:
+        t (str): Latex document
+
+    Returns:
+        str: Document without custom commands
+    """
     return unfold(convert(re.sub('\n+', '\n', re.sub(r'(?<!\\)%.*\n', '\n', t))))
 
 
@@ -155,7 +164,7 @@ def convert(data):
         replace,
         data,
     )
-    return re.sub(r'\\let\s*(\\[a-zA-Z]+)\s*=?\s*(\\?\w+)*', r'\\newcommand*{\1}{\2}\n', data)
+    return re.sub(r'\\let[\sĊ]*(\\[a-zA-Z]+)\s*=?[\sĊ]*(\\?\w+)*', r'\\newcommand*{\1}{\2}\n', data)
 
 
 def write(path, data):
